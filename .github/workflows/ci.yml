@@ -23,6 +23,8 @@ jobs:
         run: npm install
 
       - name: Lint
+        env:
+          ESLINT_USE_FLAT_CONFIG: "false"
         run: npm run lint
 
       - name: Typecheck

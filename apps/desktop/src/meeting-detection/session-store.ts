@@ -1,10 +1,11 @@
-import type { MeetingPlatform } from '@meetings/core';
+import type { AudioIngestPayload, MeetingPlatform } from '@meetings/core';
 
 export interface InProgressSessionMetadata {
   meetingId: string;
   platform: MeetingPlatform;
   startedAt: string;
   captureConfirmed: boolean;
+  ingestPayload?: AudioIngestPayload;
 }
 
 const keyFor = (platform: MeetingPlatform, meetingId: string): string => `meeting-session:${platform}:${meetingId}`;

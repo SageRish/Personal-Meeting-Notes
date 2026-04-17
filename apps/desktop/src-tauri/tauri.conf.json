@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Personal Meeting Notes",
+  "version": "0.1.0",
+  "identifier": "com.personalmeetingnotes.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev --workspace @meetings/desktop",
+    "beforeBuildCommand": "npm run build --workspace @meetings/desktop",
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Personal Meeting Notes",
+        "width": 1000,
+        "height": 700,
+        "resizable": true
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": []
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "personal-meeting-notes",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @meetings/desktop",
+    "build": "npm run build --workspace @meetings/desktop",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3"
+  }
+}

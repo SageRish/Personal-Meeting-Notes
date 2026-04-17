@@ -75,4 +75,25 @@ export const desktopPipelineRuntime = {
   queryMeetingDetail(meetingId: string): Promise<MeetingDetail | null> {
     return Promise.resolve(persistenceRepository.getMeetingDetail(meetingId));
   },
+  upsertSummary(meetingId: string, editableText: string, structuredJson: Record<string, unknown> = {}): Promise<void> {
+    persistenceRepository.upsertSummary({
+      meetingId,
+      editableText,
+      structuredJson,
+    });
+
+    return Promise.resolve();
+  },
+  upsertNotes(meetingId: string, editableMarkdown: string): Promise<void> {
+    persistenceRepository.upsertNotes({
+      meetingId,
+      editableMarkdown,
+    });
+
+    return Promise.resolve();
+  },
+  updateActionItemChecked(meetingId: string, actionItemId: number, checked: boolean): Promise<void> {
+    persistenceRepository.updateActionItemChecked(meetingId, actionItemId, checked);
+    return Promise.resolve();
+  },
 };

@@ -51,7 +51,7 @@ describe('Meetings API clients', () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            structuredJson: { summary: 'ok' },
+            structuredJson: { actionItems: ['task'], relevantHeadings: ['Overview'], decisions: ['Proceed'], openQuestions: ['Any risks?'], followUps: ['Send recap'] },
             editableText: 'summary text',
             noteMarkdown: '- task',
             actionItems: [{ text: 'task', checked: false, orderIndex: 0 }],
@@ -75,7 +75,7 @@ describe('Meetings API clients', () => {
       segments: ['hello', 'world'],
       timestamps: [0, 1],
     });
-    expect(summary.structuredJson).toEqual({ summary: 'ok' });
+    expect(summary.structuredJson).toEqual({ actionItems: ['task'], relevantHeadings: ['Overview'], decisions: ['Proceed'], openQuestions: ['Any risks?'], followUps: ['Send recap'] });
 
     expect(fetchFn).toHaveBeenNthCalledWith(
       1,

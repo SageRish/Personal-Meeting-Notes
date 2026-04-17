@@ -1,4 +1,11 @@
-import type { MeetingDetail, MeetingListFilters, MeetingListItem, MeetingStatus, RecentMeetingGroup } from '@meetings/core';
+import type {
+  MeetingDetail,
+  MeetingListFilters,
+  MeetingListItem,
+  MeetingStatus,
+  RecentMeetingGroup,
+  StructuredSummary,
+} from '@meetings/core';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { desktopPipelineRuntime } from '../../pipeline/desktop-pipeline-runtime';
@@ -33,6 +40,32 @@ const dateTimeFormat = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
   minute: '2-digit',
 });
+
+
+const EMPTY_STRUCTURED_SUMMARY: StructuredSummary = {
+  actionItems: [],
+  relevantHeadings: [],
+  decisions: [],
+  openQuestions: [],
+  followUps: [],
+};
+
+function SummarySection({ title, items }: { title: string; items: string[] }) {
+  return (
+    <section>
+      <h4>{title}</h4>
+      {items.length > 0 ? (
+        <ul className="checklist" role="list">
+          {items.map((item, index) => (
+            <li key={`${title}-${index}`}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="empty-state">No items extracted.</p>
+      )}
+    </section>
+  );
+}
 
 const dateGroupFormat = new Intl.DateTimeFormat('en-US', {
   weekday: 'long',
@@ -238,7 +271,7 @@ export function MeetingsFeature() {
     }
 
     const meetingId = selectedMeetingDetail.meeting.id;
-    const structuredJson = selectedMeetingDetail.summary?.structuredJson ?? {};
+    const structuredJson = selectedMeetingDetail.summary?.structuredJson ?? EMPTY_STRUCTURED_SUMMARY;
     const timeout = window.setTimeout(() => {
       setIsSavingSummary(true);
       void desktopPipelineRuntime
@@ -457,6 +490,21 @@ export function MeetingsFeature() {
                   <textarea rows={8} value={summaryDraft} onChange={(event) => setSummaryDraft(event.target.value)} />
                 </label>
                 {isSavingSummary ? <p className="empty-state">Saving summary…</p> : null}
+
+                <SummarySection
+                  title="Relevant Headings"
+                  items={selectedMeetingDetail?.summary?.structuredJson.relevantHeadings ?? []}
+                />
+                <SummarySection title="Decisions" items={selectedMeetingDetail?.summary?.structuredJson.decisions ?? []} />
+                <SummarySection
+                  title="Open Questions"
+                  items={selectedMeetingDetail?.summary?.structuredJson.openQuestions ?? []}
+                />
+                <SummarySection title="Follow Ups" items={selectedMeetingDetail?.summary?.structuredJson.followUps ?? []} />
+                <SummarySection
+                  title="Structured Action Items"
+                  items={selectedMeetingDetail?.summary?.structuredJson.actionItems ?? []}
+                />
               </section>
             ) : null}
 

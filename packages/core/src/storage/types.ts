@@ -1,3 +1,5 @@
+import type { StructuredSummary } from '../pipeline/summary-schema.js';
+
 export type MeetingStatus = 'scheduled' | 'in_progress' | 'processed' | 'failed';
 
 export interface MeetingEntity {
@@ -19,7 +21,7 @@ export interface TranscriptEntity {
 
 export interface SummaryEntity {
   meetingId: string;
-  structuredJson: Record<string, unknown>;
+  structuredJson: StructuredSummary;
   editableText: string;
 }
 

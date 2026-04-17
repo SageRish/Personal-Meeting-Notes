@@ -11,6 +11,7 @@ import {
   type ProcessedMeetingPayload,
   type RecentMeetingGroup,
   type VoxtralMiniTranscribeV2Client,
+  type StructuredSummary,
 } from '@meetings/core';
 
 class DesktopVoxtralClient implements VoxtralMiniTranscribeV2Client {
@@ -32,7 +33,11 @@ class DesktopMistralClient implements MistralSmall4Client {
   public async summarizeTranscript(transcriptText: string) {
     return {
       structuredJson: {
-        highlights: ['Project updates captured', 'Next steps identified'],
+        actionItems: ['Review action items from generated summary.'],
+        relevantHeadings: ['Project updates', 'Next steps'],
+        decisions: ['Capture updates in summary output'],
+        openQuestions: ['What blockers remain before completion?'],
+        followUps: ['Confirm owners and deadlines in next sync'],
       },
       editableText: `Summary: ${transcriptText}`,
       noteMarkdown: `## Notes\n\n${transcriptText}`,
@@ -75,7 +80,17 @@ export const desktopPipelineRuntime = {
   queryMeetingDetail(meetingId: string): Promise<MeetingDetail | null> {
     return Promise.resolve(persistenceRepository.getMeetingDetail(meetingId));
   },
-  upsertSummary(meetingId: string, editableText: string, structuredJson: Record<string, unknown> = {}): Promise<void> {
+  upsertSummary(
+    meetingId: string,
+    editableText: string,
+    structuredJson: StructuredSummary = {
+      actionItems: [],
+      relevantHeadings: [],
+      decisions: [],
+      openQuestions: [],
+      followUps: [],
+    },
+  ): Promise<void> {
     persistenceRepository.upsertSummary({
       meetingId,
       editableText,

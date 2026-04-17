@@ -1,6 +1,7 @@
 import type { MistralSmall4Client, VoxtralMiniTranscribeV2Client } from './ai-clients.js';
 import { DeadLetterQueue } from './dead-letter.js';
 import { withRetry, type RetryOptions } from './retry.js';
+import { SummaryValidationError } from './summary-schema.js';
 import type { AudioIngestPayload, PipelineStageEvent, ProcessedMeetingPayload } from './types.js';
 import type { PersistenceRepository } from '../storage/repository.js';
 
@@ -27,6 +28,8 @@ export class MeetingProcessingPipeline {
   }
 
   public async process(input: AudioIngestPayload): Promise<ProcessedMeetingPayload> {
+    let transcriptText = '';
+
     try {
       this.emit(input.meetingId, 'ingest', `Ingested audio from ${input.audioFilePath}.`);
 
@@ -44,6 +47,7 @@ export class MeetingProcessingPipeline {
         },
       );
 
+      transcriptText = transcript.text;
       this.emit(input.meetingId, 'transcribe', 'Audio transcribed with Voxtral Mini Transcribe V2.');
 
       const summary = await withRetry(
@@ -103,6 +107,21 @@ export class MeetingProcessingPipeline {
 
       return result;
     } catch (error) {
+      const summaryError = error as unknown;
+
+      if (summaryError instanceof SummaryValidationError) {
+        this.deadLetters.enqueue({
+          meetingId: input.meetingId,
+          stage: 'summarize',
+          payload: {
+            transcript: transcriptText,
+            rawModelOutput: summaryError.rawPayload,
+            schemaIssues: summaryError.issues,
+          },
+          error: summaryError,
+          attempts: 0,
+        });
+      }
       this.emit(input.meetingId, 'failed', `Meeting processing failed: ${String(error)}.`);
       throw error;
     }

@@ -400,7 +400,7 @@ export class PersistenceRepository {
       summary: summary
         ? {
             meetingId: summary.meeting_id,
-            structuredJson: JSON.parse(summary.structured_json) as Record<string, unknown>,
+            structuredJson: JSON.parse(summary.structured_json) as SummaryEntity['structuredJson'],
             editableText: summary.editable_text,
           }
         : null,

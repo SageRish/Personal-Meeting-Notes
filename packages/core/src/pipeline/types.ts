@@ -1,4 +1,5 @@
 import type { ActionItemEntity, MeetingEntity, NoteEntity, SummaryEntity, TranscriptEntity } from '../storage/types.js';
+import type { StructuredSummary } from './summary-schema.js';
 
 export interface AudioIngestPayload {
   meetingId: string;
@@ -16,7 +17,7 @@ export interface TranscriptionResponse {
 }
 
 export interface SummaryResponse {
-  structuredJson: Record<string, unknown>;
+  structuredJson: StructuredSummary;
   editableText: string;
   noteMarkdown: string;
   actionItems: Array<Pick<ActionItemEntity, 'text' | 'checked' | 'orderIndex'>>;

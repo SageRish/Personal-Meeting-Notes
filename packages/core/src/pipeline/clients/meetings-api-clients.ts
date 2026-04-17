@@ -3,6 +3,7 @@ import type { JsonLike, RequestResponseLogger } from '../../logging/redaction.js
 import { withRedactedLogging } from '../../logging/redaction.js';
 import { OsNativeSecretStore, type SecretStore } from '../../secrets/secret-store.js';
 import type { MistralSmall4Client, VoxtralMiniTranscribeV2Client } from '../ai-clients.js';
+import { parseSummaryResponse } from '../summary-schema.js';
 import type { SummaryResponse, TranscriptionResponse } from '../types.js';
 
 interface HttpClientDependencies {
@@ -150,24 +151,6 @@ export class MistralSmall4HttpClient extends BaseMeetingsApiClient implements Mi
       throw new Error(`Mistral Small 4 request failed with status ${response.status}.`);
     }
 
-    const body = response.body as Record<string, unknown>;
-
-    return {
-      structuredJson:
-        body.structuredJson && typeof body.structuredJson === 'object'
-          ? (body.structuredJson as Record<string, unknown>)
-          : {},
-      editableText: typeof body.editableText === 'string' ? body.editableText : '',
-      noteMarkdown: typeof body.noteMarkdown === 'string' ? body.noteMarkdown : '',
-      actionItems: Array.isArray(body.actionItems)
-        ? body.actionItems
-            .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
-            .map((item, index) => ({
-              text: typeof item.text === 'string' ? item.text : '',
-              checked: typeof item.checked === 'boolean' ? item.checked : false,
-              orderIndex: typeof item.orderIndex === 'number' ? item.orderIndex : index,
-            }))
-        : [],
-    };
+    return parseSummaryResponse(response.body);
   }
 }

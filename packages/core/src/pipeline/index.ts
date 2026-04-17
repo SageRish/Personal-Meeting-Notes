@@ -1,4 +1,9 @@
 export type { MistralSmall4Client, VoxtralMiniTranscribeV2Client } from './ai-clients.js';
+export {
+  MeetingsApiAuthenticationError,
+  MistralSmall4HttpClient,
+  VoxtralMiniTranscribeV2HttpClient,
+} from './clients/meetings-api-clients.js';
 export { DeadLetterQueue, type DeadLetterInput } from './dead-letter.js';
 export { MeetingProcessingPipeline, type MeetingProcessingPipelineOptions } from './meeting-pipeline.js';
 export { withRetry, type RetryFailureContext, type RetryOptions } from './retry.js';

@@ -54,7 +54,7 @@ describe('PersistenceRepository storage behavior', () => {
       },
       summary: {
         meetingId: 'm-001',
-        structuredJson: { topLine: 'Done' },
+        structuredJson: { actionItems: ['Ship alpha','Email notes'], relevantHeadings: ['Sprint planning'], decisions: ['Finalize plan'], openQuestions: ['Scope concerns?'], followUps: ['Share recap'] },
         editableText: 'Summary text',
       },
       note: {
@@ -155,7 +155,7 @@ describe('PersistenceRepository storage behavior', () => {
       },
       summary: {
         meetingId: 'm-upcoming',
-        structuredJson: { highlights: ['Planned scope'] },
+        structuredJson: { actionItems: ['Prepare deck'], relevantHeadings: ['Upcoming review'], decisions: ['Review planned scope'], openQuestions: ['Who presents?'], followUps: ['Send agenda'] },
         editableText: 'Upcoming summary',
       },
       note: {
@@ -183,7 +183,7 @@ describe('PersistenceRepository storage behavior', () => {
       },
       summary: {
         meetingId: 'm-recent',
-        structuredJson: { highlights: ['Deployment stable'] },
+        structuredJson: { actionItems: ['Send recap'], relevantHeadings: ['Engineering sync'], decisions: ['Deployment stable'], openQuestions: ['Need rollback plan?'], followUps: ['Follow up with support'] },
         editableText: 'Recent summary',
       },
       note: {

@@ -2,6 +2,7 @@ export type MeetingId = string;
 export { ConfigValidationError, loadConfig, type AppConfig } from './config/env.js';
 export { createRedactingLoggerMiddleware, redactSensitiveData, withRedactedLogging } from './logging/redaction.js';
 export * from './pipeline/index.js';
+export * from './meeting-detection/index.js';
 export { OsNativeSecretStore, type SecretStore } from './secrets/secret-store.js';
 export * from './storage/index.js';
 

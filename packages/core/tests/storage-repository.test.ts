@@ -130,4 +130,91 @@ describe('PersistenceRepository storage behavior', () => {
     expect(deadLetter.error_message).toBe('mock error');
     expect(deadLetter.attempts).toBe(2);
   });
+
+  it('supports repository-backed meeting list/detail queries with filters', () => {
+    const { storage, cleanup } = createTestStorage();
+    cleanupFns.push(cleanup);
+
+    const repository = new PersistenceRepository(storage.connection);
+
+    repository.persistPipelineResult({
+      meeting: {
+        id: 'm-upcoming',
+        title: 'Upcoming Product Review',
+        datetime: '2026-04-20T15:00:00.000Z',
+        platform: 'zoom',
+        duration: 1800,
+        status: 'scheduled',
+        transcriptAvailable: false,
+      },
+      transcript: {
+        meetingId: 'm-upcoming',
+        text: 'Upcoming transcript',
+        segments: ['Upcoming segment'],
+        timestamps: [0],
+      },
+      summary: {
+        meetingId: 'm-upcoming',
+        structuredJson: { highlights: ['Planned scope'] },
+        editableText: 'Upcoming summary',
+      },
+      note: {
+        meetingId: 'm-upcoming',
+        editableMarkdown: 'Upcoming note',
+      },
+      actionItems: [{ meetingId: 'm-upcoming', text: 'Prepare deck', checked: false, orderIndex: 0 }],
+    });
+
+    repository.persistPipelineResult({
+      meeting: {
+        id: 'm-recent',
+        title: 'Recent Engineering Sync',
+        datetime: '2026-04-16T14:00:00.000Z',
+        platform: 'teams',
+        duration: 2700,
+        status: 'processed',
+        transcriptAvailable: true,
+      },
+      transcript: {
+        meetingId: 'm-recent',
+        text: 'Recent transcript',
+        segments: ['Reviewed deployment', 'Assigned follow-up'],
+        timestamps: [4, 29],
+      },
+      summary: {
+        meetingId: 'm-recent',
+        structuredJson: { highlights: ['Deployment stable'] },
+        editableText: 'Recent summary',
+      },
+      note: {
+        meetingId: 'm-recent',
+        editableMarkdown: 'Follow up with support team',
+      },
+      actionItems: [{ meetingId: 'm-recent', text: 'Send recap', checked: true, orderIndex: 0 }],
+    });
+
+    const upcoming = repository.queryUpcomingMeetings({ platform: 'zoom', query: 'product' });
+    expect(upcoming).toHaveLength(1);
+    expect(upcoming[0]).toMatchObject({
+      id: 'm-upcoming',
+      status: 'scheduled',
+      transcriptAvailable: false,
+    });
+
+    const groupedRecent = repository.queryRecentGroupedMeetings({ status: 'processed', startDate: '2026-04-16T00:00:00.000Z' });
+    expect(groupedRecent).toHaveLength(1);
+    expect(groupedRecent[0]?.date).toBe('2026-04-16');
+    expect(groupedRecent[0]?.meetings[0]?.id).toBe('m-recent');
+
+    const detail = repository.getMeetingDetail('m-recent');
+    expect(detail?.meeting).toMatchObject({
+      id: 'm-recent',
+      title: 'Recent Engineering Sync',
+      transcriptAvailable: true,
+    });
+    expect(detail?.summary?.editableText).toBe('Recent summary');
+    expect(detail?.notes?.editableMarkdown).toContain('support team');
+    expect(detail?.transcript?.segments).toEqual(['Reviewed deployment', 'Assigned follow-up']);
+    expect(detail?.actionItems).toHaveLength(1);
+  });
 });

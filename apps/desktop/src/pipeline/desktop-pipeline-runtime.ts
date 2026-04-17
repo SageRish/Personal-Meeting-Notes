@@ -3,9 +3,13 @@ import {
   PersistenceRepository,
   StorageDatabase,
   type AudioIngestPayload,
+  type MeetingDetail,
+  type MeetingListFilters,
+  type MeetingListItem,
   type MistralSmall4Client,
   type PipelineStageEvent,
   type ProcessedMeetingPayload,
+  type RecentMeetingGroup,
   type VoxtralMiniTranscribeV2Client,
 } from '@meetings/core';
 
@@ -61,5 +65,14 @@ export const desktopPipelineRuntime = {
     });
 
     return pipeline.process(payload);
+  },
+  queryUpcomingMeetings(filters: MeetingListFilters, limit?: number): Promise<MeetingListItem[]> {
+    return Promise.resolve(persistenceRepository.queryUpcomingMeetings(filters, limit));
+  },
+  queryRecentGroupedMeetings(filters: MeetingListFilters): Promise<RecentMeetingGroup[]> {
+    return Promise.resolve(persistenceRepository.queryRecentGroupedMeetings(filters));
+  },
+  queryMeetingDetail(meetingId: string): Promise<MeetingDetail | null> {
+    return Promise.resolve(persistenceRepository.getMeetingDetail(meetingId));
   },
 };

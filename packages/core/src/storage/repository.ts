@@ -187,6 +187,22 @@ export class PersistenceRepository {
     transaction();
   }
 
+  public updateActionItemChecked(meetingId: string, actionItemId: number, checked: boolean): void {
+    this.database
+      .prepare(
+        `
+      UPDATE action_items
+      SET checked = @checked
+      WHERE id = @id AND meeting_id = @meeting_id
+    `,
+      )
+      .run({
+        id: actionItemId,
+        meeting_id: meetingId,
+        checked: Number(checked),
+      });
+  }
+
   public persistPipelineResult(result: PersistedPipelineResult): void {
     const transaction = this.database.transaction(() => {
       this.upsertMeeting(result.meeting);

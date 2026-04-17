@@ -1,5 +1,5 @@
 import type { MeetingDetail, MeetingListFilters, MeetingListItem, MeetingStatus, RecentMeetingGroup } from '@meetings/core';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { desktopPipelineRuntime } from '../../pipeline/desktop-pipeline-runtime';
 
@@ -39,15 +39,6 @@ const dateGroupFormat = new Intl.DateTimeFormat('en-US', {
   month: 'long',
   day: 'numeric',
 });
-
-function loadChecklistState() {
-  try {
-    const raw = window.localStorage.getItem('meeting-action-checks');
-    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
-  } catch {
-    return {};
-  }
-}
 
 function buildFilters({
   platform,
@@ -135,14 +126,18 @@ export function MeetingsFeature() {
   const [selectedMeetingId, setSelectedMeetingId] = useState('');
   const [selectedMeetingDetail, setSelectedMeetingDetail] = useState<MeetingDetail | null>(null);
   const [activeTab, setActiveTab] = useState<MeetingTab>('Summary');
-  const [checkState, setCheckState] = useState<Record<string, boolean>>(() => loadChecklistState());
 
   const [summaryDraft, setSummaryDraft] = useState('');
   const [notesDraft, setNotesDraft] = useState('');
   const [transcriptSearch, setTranscriptSearch] = useState('');
+  const [isSavingSummary, setIsSavingSummary] = useState(false);
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [isUpdatingActionItem, setIsUpdatingActionItem] = useState(false);
 
   const [loadingLists, setLoadingLists] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const summaryHydratedRef = useRef(false);
+  const notesHydratedRef = useRef(false);
 
   useEffect(() => {
     let canceled = false;
@@ -197,6 +192,8 @@ export function MeetingsFeature() {
       setSelectedMeetingDetail(detail);
       setSummaryDraft(detail?.summary?.editableText ?? '');
       setNotesDraft(detail?.notes?.editableMarkdown ?? '');
+      summaryHydratedRef.current = false;
+      notesHydratedRef.current = false;
       setLoadingDetail(false);
     };
 
@@ -225,15 +222,75 @@ export function MeetingsFeature() {
 
   const selectedMeeting = selectedMeetingDetail?.meeting;
 
-  const toggleActionItem = (actionItemId: string) => {
+  useEffect(() => {
+    if (!selectedMeetingDetail) {
+      return;
+    }
+
+    if (!summaryHydratedRef.current) {
+      summaryHydratedRef.current = true;
+      return;
+    }
+
+    const currentSummary = selectedMeetingDetail.summary?.editableText ?? '';
+    if (summaryDraft === currentSummary) {
+      return;
+    }
+
+    const meetingId = selectedMeetingDetail.meeting.id;
+    const structuredJson = selectedMeetingDetail.summary?.structuredJson ?? {};
+    const timeout = window.setTimeout(() => {
+      setIsSavingSummary(true);
+      void desktopPipelineRuntime
+        .upsertSummary(meetingId, summaryDraft, structuredJson)
+        .finally(() => setIsSavingSummary(false));
+    }, 400);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [selectedMeetingDetail, summaryDraft]);
+
+  useEffect(() => {
+    if (!selectedMeetingDetail) {
+      return;
+    }
+
+    if (!notesHydratedRef.current) {
+      notesHydratedRef.current = true;
+      return;
+    }
+
+    const currentNotes = selectedMeetingDetail.notes?.editableMarkdown ?? '';
+    if (notesDraft === currentNotes) {
+      return;
+    }
+
+    const meetingId = selectedMeetingDetail.meeting.id;
+    const timeout = window.setTimeout(() => {
+      setIsSavingNotes(true);
+      void desktopPipelineRuntime.upsertNotes(meetingId, notesDraft).finally(() => setIsSavingNotes(false));
+    }, 400);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [notesDraft, selectedMeetingDetail]);
+
+  const toggleActionItem = async (actionItemId: number, checked: boolean) => {
     if (!selectedMeeting) {
       return;
     }
 
-    const key = `${selectedMeeting.id}:${actionItemId}`;
-    const next = { ...checkState, [key]: !checkState[key] };
-    setCheckState(next);
-    window.localStorage.setItem('meeting-action-checks', JSON.stringify(next));
+    setIsUpdatingActionItem(true);
+
+    try {
+      await desktopPipelineRuntime.updateActionItemChecked(selectedMeeting.id, actionItemId, !checked);
+      const refreshedDetail = await desktopPipelineRuntime.queryMeetingDetail(selectedMeeting.id);
+      setSelectedMeetingDetail(refreshedDetail);
+    } finally {
+      setIsUpdatingActionItem(false);
+    }
   };
 
   if (!selectedMeeting) {
@@ -399,6 +456,7 @@ export function MeetingsFeature() {
                   Editable summary
                   <textarea rows={8} value={summaryDraft} onChange={(event) => setSummaryDraft(event.target.value)} />
                 </label>
+                {isSavingSummary ? <p className="empty-state">Saving summary…</p> : null}
               </section>
             ) : null}
 
@@ -408,6 +466,7 @@ export function MeetingsFeature() {
                   Editable notes
                   <textarea rows={10} value={notesDraft} onChange={(event) => setNotesDraft(event.target.value)} />
                 </label>
+                {isSavingNotes ? <p className="empty-state">Saving notes…</p> : null}
               </section>
             ) : null}
 
@@ -446,14 +505,13 @@ export function MeetingsFeature() {
             <h3 id="action-items-title">Action Items</h3>
             <ul className="checklist" role="list">
               {(selectedMeetingDetail?.actionItems ?? []).map((item) => {
-                const itemId = String(item.id ?? item.orderIndex);
-                const key = `${selectedMeeting.id}:${itemId}`;
-                const checked = checkState[key] ?? item.checked;
+                const itemId = item.id ?? item.orderIndex;
+                const checked = item.checked;
 
                 return (
                   <li key={itemId}>
                     <label>
-                      <input type="checkbox" checked={checked} onChange={() => toggleActionItem(itemId)} />
+                      <input type="checkbox" checked={checked} onChange={() => void toggleActionItem(itemId, checked)} />
                       <span>{item.text}</span>
                     </label>
                   </li>
@@ -461,6 +519,7 @@ export function MeetingsFeature() {
               })}
             </ul>
             {loadingDetail ? <p className="empty-state">Loading details…</p> : null}
+            {isUpdatingActionItem ? <p className="empty-state">Updating action items…</p> : null}
           </section>
         </aside>
       </main>
